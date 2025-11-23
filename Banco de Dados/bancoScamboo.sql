@@ -305,7 +305,6 @@ CREATE PROCEDURE spInserirUsuario(
     pUsu_FotoPerfil VARCHAR(90),
     pUsu_Nome VARCHAR(45),
     pUsu_DataNascimento DATE,
-    pUsu_SaldoMoeda INT,
     pUsu_Status BOOLEAN,
     pUsu_LinkPortifolio VARCHAR(90),
     pUsu_LinkLinkedin VARCHAR(90)
@@ -319,14 +318,14 @@ BEGIN
 
     -- depois insere as informações referentes ao usuário
 	INSERT INTO Usuario(usu_fotoPerfil, usu_Nome, usu_dataNascimento, usu_saldoMoeda, usu_status, usu_linkPortifolio, usu_linkLinkedin, cre_codigo)
-	VALUES(pUsu_fotoPerfil, pUsu_Nome, pUsu_dataNascimento, pUsu_saldoMoeda, pUsu_status, pUsu_linkPortifolio, pUsu_linkLinkedin, last_insert_id());
+	VALUES(pUsu_fotoPerfil, pUsu_Nome, pUsu_dataNascimento, 30, pUsu_status, pUsu_linkPortifolio, pUsu_linkLinkedin, last_insert_id());
  
 END $$
 DELIMITER ;
  
-CALL spInserirUsuario('carla@gmail.com','C@rl42025!',1,'foto_carla.png','Carla Monteiro','1999-02-18',120,1,'https://portfolio-carla.com','https://linkedin.com/in/carla');
-CALL spInserirUsuario('felipe@gmail.com','F3l1p3#Dev',0,'foto_felipe.png','Felipe Rocha','2001-08-05',80,1,'https://portfolio-felipe.com','https://linkedin.com/in/felipe');
-CALL spInserirUsuario('larissa@gmail.com','L4r1ss@2025',1,'foto_larissa.png','Larissa Costa','1997-12-12',95,1,'https://portfolio-larissa.com','https://linkedin.com/in/larissa');
+CALL spInserirUsuario('carla@gmail.com','C@rl42025!',1,'foto_carla.png','Carla Monteiro','1999-02-18',1,'https://portfolio-carla.com','https://linkedin.com/in/carla');
+CALL spInserirUsuario('felipe@gmail.com','F3l1p3#Dev',0,'foto_felipe.png','Felipe Rocha','2001-08-05',1,'https://portfolio-felipe.com','https://linkedin.com/in/felipe');
+CALL spInserirUsuario('larissa@gmail.com','L4r1ss@2025',1,'foto_larissa.png','Larissa Costa','1997-12-12',1,'https://portfolio-larissa.com','https://linkedin.com/in/larissa');
 
 -- inserts de serviços
 INSERT INTO Servico(ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao, ser_concluido, usu_codigo, cat_codigo) 
@@ -388,3 +387,6 @@ INSERT INTO Proposta(pro_descricao, pro_aceita, usu_codigo, ser_codigo)
 VALUES('Posso implementar o sistema de gerenciamento solicitado',0,1,3);
 
 select * from NotificacaoProposta;
+
+select * from usuario
+inner join credencial using(cre_codigo) 
