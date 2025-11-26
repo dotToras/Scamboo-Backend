@@ -411,6 +411,22 @@ BEGIN
 END $$
 DELIMITER ;
 
+-- RF013 – O sistema deve permitir que o usuário visualize seu histórico de serviços
+DELIMITER $$
+CREATE PROCEDURE spvisualizarHistorico(
+IN pusu_codigo int
+)
+BEGIN
+	
+    SELECT ser_nome, ser_descricao, ser_dataPedido, ser_concluido, cat_nome
+    FROM Servico
+	INNER JOIN Categoria USING(cat_codigo)
+    WHERE usu_codigo = pusu_codigo;
+
+END $$
+DELIMITER ;
+
+
 -- RF023 - O sistema deve permitir que o usuário receba moedas ao concluir um pedido de serviço como prestador 
 -- RN015 - Criar um pedido de serviço consome exatamente 15 moedas 
 DELIMITER $$
