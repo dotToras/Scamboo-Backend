@@ -8,11 +8,11 @@ router.get('/usuario/:usuarioId', servicoController.byUsuario);
 router.get('/categoria/:categoriaId', servicoController.byCategoria);
 
 // Rotas básicas CRUD
-router.get('/', servicoController.index);
+router.get('/', servicoController.todosServicos);
 router.get('/:id', servicoController.show);
-router.post('/', servicoController.store);
+router.post('/', servicoController.guardarServico);
 //router.put('/:id', servicoController.update);
-router.delete('/:id', servicoController.destroy);
+router.delete('/:id', servicoController.deletarServico);
 
 // Rota para concluir serviço
 router.patch('/:id/concluir', servicoController.concluir);

@@ -3,28 +3,15 @@ const db = require('../config/database');
 class Servico {
 
   // Buscar todos os serviços
-  static async findAll() {
-    const [rows] = await db.query(`
-      SELECT s.*, u.usu_Nome, c.cat_nome
-      FROM Servico s
-      INNER JOIN Usuario u ON s.usu_codigo = u.usu_codigo
-      INNER JOIN Categoria c ON s.cat_codigo = c.cat_codigo
-      ORDER BY s.ser_dataPedido DESC
-    `);
-    return rows;
+  static async buscarServicos() {
+    const [linhas] = await db.query(` SELECT * FROM vwServicos `);
+    return linhas;
   }
 
   // Buscar serviços disponíveis (não concluídos e não expirados)
-  static async findDisponiveis() {
-    const [rows] = await db.query(`
-      SELECT s.*, u.usu_Nome, c.cat_nome
-      FROM Servico s
-      INNER JOIN Usuario u ON s.usu_codigo = u.usu_codigo
-      INNER JOIN Categoria c ON s.cat_codigo = c.cat_codigo
-      WHERE s.ser_concluido = 0 AND s.ser_dataExpiracao >= CURDATE()
-      ORDER BY s.ser_dataPedido DESC
-    `);
-    return rows;
+  static async buscarDisponiveis() {
+    const [linhas] = await db.query(` SELECT * FROM vwServicosDisponiveis `);
+    return linhas;
   }
 
   // Buscar serviço por ID
@@ -53,15 +40,14 @@ class Servico {
   }
 
   // Criar novo serviço
-  static async create(servicoData) {
+  static async criarServico(servicoData) {
     const { nome, descricao, dataExpiracao, usuarioId, categoriaId } = servicoData;
 
-    const [result] = await db.query(`
-      INSERT INTO Servico (ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao, ser_concluido, usu_codigo, cat_codigo)
-      VALUES (?, ?, CURDATE(), ?, 0, ?, ?)
+    const [resultado] = await db.query(`
+      call spInserirServico(?, ?, ?, ?, ?)
     `, [nome, descricao, dataExpiracao, usuarioId, categoriaId]);
 
-    return await this.findById(result.insertId);
+    return await this.findById(resultado.insertId);
   }
 
   // Atualizar serviço -- VER SE VAI SER USADO
@@ -89,8 +75,8 @@ class Servico {
   }
 
   // Deletar serviço
-  static async delete(id) {
-    const [result] = await db.query('DELETE FROM Servico WHERE ser_codigo = ?', [id]);
+  static async deletar(id) {
+    const [result] = await db.query('CALL spDeletarServico(?)', [id]);
     return result.affectedRows > 0;
   }
 

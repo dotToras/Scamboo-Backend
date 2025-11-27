@@ -4,9 +4,9 @@ const db = require('../config/database');
 class ServicoController {
 
   // GET /api/servicos
-  async index(req, res) {
+  async todosServicos(req, res) {
     try {
-      const servicos = await Servico.findAll();
+      const servicos = await Servico.buscarServicos;
       res.json(servicos);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -16,7 +16,7 @@ class ServicoController {
   // GET /api/servicos/disponiveis
   async disponiveis(req, res) {
     try {
-      const servicos = await Servico.findDisponiveis();
+      const servicos = await Servico.buscarDisponiveis;
       res.json(servicos);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -69,7 +69,7 @@ class ServicoController {
   }
 
   // POST /api/servicos
-  async store(req, res) {
+  async guardarServico(req, res) {
     try {
       const { nome, descricao, dataExpiracao, usuarioId, categoriaId } = req.body;
       
@@ -78,7 +78,7 @@ class ServicoController {
         return res.status(400).json({ error: 'Campos obrigatórios faltando' });
       }
       
-      const servico = await Servico.create({
+      const servico = await Servico.criarServico({
         nome,
         descricao,
         dataExpiracao,
@@ -109,7 +109,7 @@ class ServicoController {
   }
 
   // DELETE /api/servicos/:id
-  async destroy(req, res) {
+  async deletarServico(req, res) {
     try {
       const { id } = req.params;
       const deletado = await Servico.delete(id);
@@ -124,16 +124,6 @@ class ServicoController {
     }
   }
 
-  // GET /api/servicos/:id/propostas
-  async getPropostas(req, res) {
-    try {
-      const { id } = req.params;
-      const propostas = await Servico.findPropostas(id);
-      res.json(propostas);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  }
 }
 
 module.exports = new ServicoController();
