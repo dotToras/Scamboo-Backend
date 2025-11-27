@@ -23,23 +23,32 @@ class Usuario {
     return rows[0]; // Retorna o usuário encontrado
   }
 
+  // Buscar usuário por email - complementa o create abaixo
+  static async findByEmail(email) {
+    const [rows] = await db.query(`
+      SELECT u.*, c.cre_email, c.cre_Senha, c.cre_tipo, c.cre_dataCadastro
+      FROM Usuario u
+      INNER JOIN Credencial c ON u.cre_codigo = c.cre_codigo
+      WHERE c.cre_email = ?
+    `, [email]);
+    return rows[0]; // Retorna o usuário encontrado
+  }
+
   // Criar novo usuário usando procedure
   static async create(userData) {
-    /* A forma feita extrai os dados do usuário com desestruturação, equivalente a:
-          const email = req.body.email;
-          const senha = req.body.senha;
-    */
-    const { email, senha, tipo, fotoPerfil, nome, dataNascimento, status, linkPortifolio, linkLinkedin } = userData;
+    try {
+      const { email, senha, tipo, fotoPerfil, nome, dataNascimento, status, linkPortifolio, linkLinkedin } = userData;
 
-    // Inserir credencial e usuário via procedure
-    await db.query(
-      'CALL spInserirUsuario(?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [email, senha, tipo, fotoPerfil, nome, dataNascimento, status, linkPortifolio, linkLinkedin]
-      // Extrai os parâmetros conforme a procedure definida no banco
-    );
+      await db.query(
+        'CALL spInserirUsuario(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [email, senha, tipo, fotoPerfil, nome, dataNascimento, status, linkPortifolio, linkLinkedin]
+      );
 
-    // Retornar o usuário recém-criado
-    return await this.findByEmail(email);
+      return await this.findByEmail(email);
+    } catch (error) {
+      console.error('Erro ao criar usuário:', error.message);
+      throw error;  // Passa o erro para a controller tratar
+    }
   }
 
   // Atualizar usuário

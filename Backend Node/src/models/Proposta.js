@@ -1,7 +1,7 @@
 const db = require('../config/database');
 
 class Proposta {
-  
+
   // Buscar todas as propostas
   static async findAll() {
     const [rows] = await db.query(`
@@ -53,12 +53,12 @@ class Proposta {
   // Criar nova proposta (dispara trigger de notificação)
   static async create(propostaData) {
     const { descricao, usuarioId, servicoId } = propostaData;
-    
+
     const [result] = await db.query(`
       INSERT INTO Proposta (pro_descricao, pro_aceita, usu_codigo, ser_codigo)
       VALUES (?, 0, ?, ?)
     `, [descricao, usuarioId, servicoId]);
-    
+
     return await this.findById(result.insertId);
   }
 
