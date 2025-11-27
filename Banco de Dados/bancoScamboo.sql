@@ -271,7 +271,6 @@ DELIMITER $$
 CREATE PROCEDURE spInserirUsuario(
     pCre_Email VARCHAR(90),
     pCre_Senha VARCHAR(45),
-    pCre_Tipo BOOLEAN,
     pUsu_FotoPerfil VARCHAR(255),
     pUsu_nome VARCHAR(45),
     pUsu_DataNascimento DATE,
@@ -281,8 +280,8 @@ CREATE PROCEDURE spInserirUsuario(
 )
 BEGIN
     -- primeiro insere-se as informações de credencial do usuario
-	INSERT INTO Credencial(cre_email, cre_Senha, cre_dataCadastro, cre_tipo)
-	VALUES(pCre_Email, pCre_Senha, CURDATE(), pCre_Tipo);
+	INSERT INTO Credencial(cre_email, cre_Senha, cre_dataCadastro)
+	VALUES(pCre_Email, pCre_Senha, CURDATE());
 
     -- depois insere as informações referentes ao usuário
 	INSERT INTO Usuario(usu_fotoPerfil, usu_Nome, usu_dataNascimento, usu_saldoMoeda, usu_status, usu_linkPortifolio, usu_linkLinkedin, cre_codigo)
@@ -291,10 +290,10 @@ BEGIN
 END $$
 DELIMITER ;
  
-CALL spInserirUsuario('carla@gmail.com','C@rl42025!',1,'foto_carla.png','Carla Monteiro','1999-02-18',1,'https://portfolio-carla.com','https://linkedin.com/in/carla');
-CALL spInserirUsuario('felipe@gmail.com','F3l1p3#Dev',0,'foto_felipe.png','Felipe Rocha','2001-08-05',1,'https://portfolio-felipe.com','https://linkedin.com/in/felipe');
-CALL spInserirUsuario('larissa@gmail.com','L4r1ss@2025',1,'foto_larissa.png','Larissa Costa','1997-12-12',1,'https://portfolio-larissa.com','https://linkedin.com/in/larissa');
-CALL spInserirUsuario('rafael@gmail.com','R4f4el@2025',0,'foto_rafael.png','Rafael Souza','1998-11-11',1,'https://portfolio-rafael.com','https://linkedin.com/in/rafael');
+CALL spInserirUsuario('carla@gmail.com','C@rl42025!','foto_carla.png','Carla Monteiro','1999-02-18',1,'https://portfolio-carla.com','https://linkedin.com/in/carla');
+CALL spInserirUsuario('felipe@gmail.com','F3l1p3#Dev','foto_felipe.png','Felipe Rocha','2001-08-05',1,'https://portfolio-felipe.com','https://linkedin.com/in/felipe');
+CALL spInserirUsuario('larissa@gmail.com','L4r1ss@2025','foto_larissa.png','Larissa Costa','1997-12-12',1,'https://portfolio-larissa.com','https://linkedin.com/in/larissa');
+CALL spInserirUsuario('rafael@gmail.com','R4f4el@2025','foto_rafael.png','Rafael Souza','1998-11-11',1,'https://portfolio-rafael.com','https://linkedin.com/in/rafael');
 
 -- inserts de serviços
 INSERT INTO Servico(ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao, ser_concluido, usu_codigo, cat_codigo) 
@@ -667,3 +666,25 @@ BEGIN
     WHERE usu_codigo = pUsu_Codigo;
 END $
 DELIMITER ;
+
+-- VIEWS
+
+-- Exibir todos os serviços
+CREATE VIEW vwServicos AS 
+SELECT ser_codigo, ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao,cat_nome, usu_nome as 'Criador'
+FROM Servico
+INNER JOIN Categoria USING(cat_codigo)
+INNER JOIN Usuario USING(usu_codigo);
+
+-- Exibir serviços disponiveis
+CREATE VIEW vwServicosDisponiveis AS 
+SELECT ser_codigo, ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao,cat_nome, usu_nome as 'Criador'
+FROM Servico
+INNER JOIN Categoria USING(cat_codigo)
+INNER JOIN Usuario USING(usu_codigo) 
+WHERE ser_concluido = 0 AND ser_dataExpiracao >= CURDATE();
+
+SELECT * FROM vwServicosDisponiveis;
+
+
+-- TODO: Produtos concluidos por usuario
