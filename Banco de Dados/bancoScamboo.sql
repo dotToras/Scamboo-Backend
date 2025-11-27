@@ -15,8 +15,8 @@ CREATE TABLE Credencial (
 CREATE TABLE Usuario (
 
 	usu_codigo int primary key auto_increment,
-    usu_fotoPerfil varchar(90),
-    usu_Nome varchar(45),
+    usu_fotoPerfil varchar(255),
+    usu_nome varchar(45),
     usu_dataNascimento date,
     usu_saldoMoeda int,
     usu_status boolean,
@@ -263,13 +263,17 @@ DELIMITER ;
 
 */
 
+/*
+RF000 - O sistema deve permitir que o usuário se cadastre 
+RF021 - O sistema deve atribuir moedas ao usuário no momento do cadastro 
+ */
 DELIMITER $$
 CREATE PROCEDURE spInserirUsuario(
     pCre_Email VARCHAR(90),
     pCre_Senha VARCHAR(45),
     pCre_Tipo BOOLEAN,
-    pUsu_FotoPerfil VARCHAR(90),
-    pUsu_Nome VARCHAR(45),
+    pUsu_FotoPerfil VARCHAR(255),
+    pUsu_nome VARCHAR(45),
     pUsu_DataNascimento DATE,
     pUsu_Status BOOLEAN,
     pUsu_LinkPortifolio VARCHAR(90),
@@ -282,7 +286,7 @@ BEGIN
 
     -- depois insere as informações referentes ao usuário
 	INSERT INTO Usuario(usu_fotoPerfil, usu_Nome, usu_dataNascimento, usu_saldoMoeda, usu_status, usu_linkPortifolio, usu_linkLinkedin, cre_codigo)
-	VALUES(pUsu_fotoPerfil, pUsu_Nome, pUsu_dataNascimento, 30, pUsu_status, pUsu_linkPortifolio, pUsu_linkLinkedin, last_insert_id());
+	VALUES(pUsu_fotoPerfil, pUsu_nome, pUsu_dataNascimento, 30, pUsu_status, pUsu_linkPortifolio, pUsu_linkLinkedin, last_insert_id());
  
 END $$
 DELIMITER ;
@@ -302,7 +306,95 @@ VALUES('App mobile para delivery','Aplicativo Android e iOS para pedidos online'
 INSERT INTO Servico(ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao, ser_concluido, usu_codigo, cat_codigo) 
 VALUES('Sistema de gerenciamento','Sistema web para gerenciar estoque e vendas','2025-10-31','2025-11-12',0,3,1);
 
--- Trigger para atualizar o saldo de moeda 
+
+-- RF003 - O sistema deve permitir que o usuário faça login utilizando e-mail e senha válidos 
+DELIMITER $$
+CREATE PROCEDURE spVerificarLogin(
+IN pCre_Email VARCHAR(90),
+IN pCre_Senha VARCHAR(45)
+)
+BEGIN
+SELECT 
+        Credencial.cre_codigo,
+        Usuario.usu_codigo, 
+        Usuario.usu_status
+    FROM 
+        Credencial INNER JOIN Usuario USING(cre_codigo)  
+    WHERE 
+        cre_email = pCre_Email AND cre_Senha = pCre_Senha; 
+END $$
+DELIMITER ;
+
+/* RF004 – O sistema deve permitir que o usuário mantenha seu perfil de usuário */
+DELIMITER $$
+CREATE PROCEDURE spAtualizarPerfil(
+IN pusu_codigo int,
+IN pusu_fotoPerfil VARCHAR(255),
+IN pusu_nome VARCHAR(45),
+IN pusu_dataNascimento date,
+IN pusu_linkPortifolio varchar(255),
+IN pusu_linkLinkedin varchar(255)
+)
+BEGIN
+
+	UPDATE Usuario 
+    SET usu_fotoPerfil = pusu_fotoPerfil 
+		AND usu_nome = pusu_nome
+		AND usu_dataNascimento = pusu_dataNascimento AND usu_linkPortfolio = pusu_linkPortifolio
+		AND usu_linkLinkedin = pusu_linkLinkedin
+     WHERE usu_codigo = pusu_codigo;
+
+END $$
+DELIMITER ;
+
+-- RF006 – O sistema deve permitir que o usuário busque por pedidos de serviços
+DELIMITER $$
+CREATE PROCEDURE spbuscarServicos(
+IN pser_nome varchar(45)
+)
+BEGIN
+	
+    SELECT ser_nome, ser_descricao, ser_dataPedido, ser_concluido, cat_nome
+    FROM Servico
+	INNER JOIN Categoria USING(cat_codigo)
+    WHERE ser_nome LIKE CONCAT('%', pser_nome, '%');
+
+END $$
+DELIMITER ;
+
+-- RF007 – O sistema deve permitir que o usuário filtre pedidos por categoria
+DELIMITER $$
+CREATE PROCEDURE spbuscarServicosCategoria(
+IN pcat_nome varchar(45)
+)
+BEGIN
+	
+    SELECT ser_nome, ser_descricao, ser_dataPedido, ser_concluido, cat_nome
+    FROM Servico
+	INNER JOIN Categoria USING(cat_codigo)
+    WHERE cat_nome LIKE CONCAT('%', pcat_nome, '%');
+
+END $$
+DELIMITER ;
+
+-- RF013 – O sistema deve permitir que o usuário visualize seu histórico de serviços
+DELIMITER $$
+CREATE PROCEDURE spvisualizarHistorico(
+IN pusu_codigo int
+)
+BEGIN
+	
+    SELECT ser_nome, ser_descricao, ser_dataPedido, ser_concluido, cat_nome
+    FROM Servico
+	INNER JOIN Categoria USING(cat_codigo)
+    WHERE usu_codigo = pusu_codigo;
+
+END $$
+DELIMITER ;
+
+
+-- RF023 - O sistema deve permitir que o usuário receba moedas ao concluir um pedido de serviço como prestador 
+-- RN015 - Criar um pedido de serviço consome exatamente 15 moedas 
 DELIMITER $$
 CREATE TRIGGER Tgr_Atualizar_SaldoMoeda
 AFTER INSERT ON TransacoesMoeda
@@ -311,17 +403,17 @@ BEGIN
     -- Subtrai ou adiciona o valor da transação do/ao saldo do usuário correspondente
     IF NEW.trm_tipo = 1 THEN
         UPDATE Usuario
-        SET usu_saldoMoeda = usu_saldoMoeda - NEW.trm_valor
+        SET usu_saldoMoeda = usu_saldoMoeda - 15
         WHERE usu_codigo = NEW.usu_codigo;
     ELSE 
         UPDATE Usuario
-        SET usu_saldoMoeda = usu_saldoMoeda + NEW.trm_valor
+        SET usu_saldoMoeda = usu_saldoMoeda + 15
         WHERE usu_codigo = NEW.usu_codigo;
     END IF;
 END $$
 DELIMITER ;
 
--- Trigger para notificar o usuario assim que seu serviço receber uma proposta
+-- RF025 - O sistema deve notificar o usuário sobre novas propostas 
 DELIMITER $$
 CREATE TRIGGER NotificarProposta AFTER INSERT ON Proposta
 FOR EACH ROW
@@ -339,6 +431,7 @@ VALUES(
         
 END $$
 DELIMITER ;
+
 
 -- inserts de proposta
 INSERT INTO Proposta(pro_descricao, pro_aceita, usu_codigo, ser_codigo) 
