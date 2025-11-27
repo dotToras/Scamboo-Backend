@@ -8,8 +8,7 @@ CREATE TABLE Credencial (
 	cre_codigo int primary key auto_increment,
     cre_email varchar(90),
     cre_Senha varchar(45),
-    cre_dataCadastro date,
-    cre_tipo boolean
+    cre_dataCadastro date
 
 );
 
@@ -184,45 +183,17 @@ CREATE TABLE PalavraProibida (
 
 );
 
-CREATE TABLE Moderador (
-
-	mod_codigo int primary key auto_increment,
-    mod_nome varchar(45),
-    mod_fotoPerfil varchar(255),
-    cre_codigo int,
-    FOREIGN KEY(cre_codigo) REFERENCES Credencial(cre_codigo)
-
-);
-
-CREATE TABLE Denuncia (
-
-	den_codigo int primary key auto_increment,
-    den_justificativa varchar(255),
-    den_dataDenuncia date,
-    den_status boolean,
-    den_veredito varchar(45),
-    mod_codigo int,
-    usu_codigo int,
-    ava_codigo int,
-    FOREIGN KEY(mod_codigo) REFERENCES Moderador(mod_codigo),
-    FOREIGN KEY(usu_codigo) REFERENCES Usuario(usu_codigo),
-    FOREIGN KEY(ava_codigo) REFERENCES Avaliacao(ava_codigo)
-
-);
-
 -- Procedures básicas, para inserir o que já é predefinido(categoria, habilidades, areas de interesse, palavras banidas)
 DELIMITER $$
 CREATE PROCEDURE spInserirAreaInteresse(
     pari_nome varchar(45)
 )
- 
 BEGIN
  
 	INSERT INTO AreaInteresse( ari_nome)
 	VALUES(pari_nome);
  
 END $$
- 
 DELIMITER ;
  
 -- a colocar mais
@@ -236,14 +207,12 @@ DELIMITER $$
 CREATE PROCEDURE spInserirHabilidades(
     phab_nome varchar(45)
 )
- 
 BEGIN
  
 	INSERT INTO Habilidade(hab_nome)
 	VALUES(phab_nome);
  
 END $$
- 
 DELIMITER ;
  
 -- a colocar mais
@@ -258,14 +227,12 @@ DELIMITER $$
 CREATE PROCEDURE spInserirCategoria(
     pcat_nome varchar(45)
 )
- 
 BEGIN
  
 	INSERT INTO Categoria(cat_nome)
 	VALUES(pcat_nome);
  
 END $$
- 
 DELIMITER ;
  
 -- a fazer chamada
@@ -296,7 +263,6 @@ DELIMITER ;
 
 */
 
-
 DELIMITER $$
 CREATE PROCEDURE spInserirUsuario(
     pCre_Email VARCHAR(90),
@@ -309,9 +275,7 @@ CREATE PROCEDURE spInserirUsuario(
     pUsu_LinkPortifolio VARCHAR(90),
     pUsu_LinkLinkedin VARCHAR(90)
 )
- 
 BEGIN
-    
     -- primeiro insere-se as informações de credencial do usuario
 	INSERT INTO Credencial(cre_email, cre_Senha, cre_dataCadastro, cre_tipo)
 	VALUES(pCre_Email, pCre_Senha, CURDATE(), pCre_Tipo);
@@ -326,6 +290,7 @@ DELIMITER ;
 CALL spInserirUsuario('carla@gmail.com','C@rl42025!',1,'foto_carla.png','Carla Monteiro','1999-02-18',1,'https://portfolio-carla.com','https://linkedin.com/in/carla');
 CALL spInserirUsuario('felipe@gmail.com','F3l1p3#Dev',0,'foto_felipe.png','Felipe Rocha','2001-08-05',1,'https://portfolio-felipe.com','https://linkedin.com/in/felipe');
 CALL spInserirUsuario('larissa@gmail.com','L4r1ss@2025',1,'foto_larissa.png','Larissa Costa','1997-12-12',1,'https://portfolio-larissa.com','https://linkedin.com/in/larissa');
+CALL spInserirUsuario('rafael@gmail.com','R4f4el@2025',0,'foto_rafael.png','Rafael Souza','1998-11-11',1,'https://portfolio-rafael.com','https://linkedin.com/in/rafael');
 
 -- inserts de serviços
 INSERT INTO Servico(ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao, ser_concluido, usu_codigo, cat_codigo) 
@@ -354,7 +319,6 @@ BEGIN
         WHERE usu_codigo = NEW.usu_codigo;
     END IF;
 END $$
-
 DELIMITER ;
 
 -- Trigger para notificar o usuario assim que seu serviço receber uma proposta
@@ -386,7 +350,227 @@ VALUES('Tenho experiência em apps mobile, posso criar o seu',0,3,2);
 INSERT INTO Proposta(pro_descricao, pro_aceita, usu_codigo, ser_codigo) 
 VALUES('Posso implementar o sistema de gerenciamento solicitado',0,1,3);
 
-select * from NotificacaoProposta;
+-- RF002 - Atualizar senha com código de recuperação
+DELIMITER $$
+CREATE PROCEDURE spRecuperarSenha(
+    pCre_Email VARCHAR(90),
+    pNovaSenha VARCHAR(45)
+)
+BEGIN
+    UPDATE Credencial
+    SET cre_Senha = pNovaSenha
+    WHERE cre_email = pCre_Email;
+END $$
+DELIMITER ;
 
-select * from usuario
-inner join credencial using(cre_codigo) 
+-- RF005 - Manter pedidos de serviço (CREATE)
+DELIMITER $$
+CREATE PROCEDURE spInserirServico(
+    pSer_Nome VARCHAR(45),
+    pSer_Descricao VARCHAR(255),
+    pSer_DataExpiracao DATE,
+    pUsu_Codigo INT,
+    pCat_Codigo INT
+)
+BEGIN
+    INSERT INTO Servico(ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao, ser_concluido, usu_codigo, cat_codigo)
+    VALUES(pSer_Nome, pSer_Descricao, CURDATE(), pSer_DataExpiracao, 0, pUsu_Codigo, pCat_Codigo);
+END $$
+DELIMITER ;
+
+-- RF005 - Atualizar pedido de serviço
+DELIMITER $$
+CREATE PROCEDURE spAtualizarServico(
+    pSer_Codigo INT,
+    pSer_Nome VARCHAR(45),
+    pSer_Descricao VARCHAR(255),
+    pSer_DataExpiracao DATE,
+    pCat_Codigo INT
+)
+BEGIN
+    UPDATE Servico
+    SET ser_nome = pSer_Nome,
+        ser_descricao = pSer_Descricao,
+        ser_dataExpiracao = pSer_DataExpiracao,
+        cat_codigo = pCat_Codigo
+    WHERE ser_codigo = pSer_Codigo;
+END $$
+DELIMITER ;
+
+-- RF005 - Deletar pedido de serviço
+DELIMITER $
+CREATE PROCEDURE spDeletarServico(
+    pSer_Codigo INT
+)
+BEGIN
+    -- Deleta registros relacionados primeiro
+    DELETE FROM NotificacaoProposta WHERE ser_codigo = pSer_Codigo;
+    DELETE FROM TransacoesMoeda WHERE ser_codigo = pSer_Codigo;
+    DELETE FROM Avaliacao WHERE ser_codigo = pSer_Codigo;
+    DELETE FROM Proposta WHERE ser_codigo = pSer_Codigo;
+    
+    -- Agora pode deletar o serviço
+    DELETE FROM Servico WHERE ser_codigo = pSer_Codigo;
+END $
+DELIMITER ;
+
+-- RF008 - Visualizar histórico de mensagens
+DELIMITER $$
+CREATE PROCEDURE spVisualizarHistoricoMensagens(
+    pCha_Codigo INT
+)
+BEGIN
+    SELECT m.men_codigo, m.men_dataEnvio, m.men_textoMensagem, 
+           u.usu_codigo, u.usu_Nome, u.usu_fotoPerfil
+    FROM Mensagem m
+    INNER JOIN Usuario u ON m.usu_codigo = u.usu_codigo
+    WHERE m.cha_codigo = pCha_Codigo
+    ORDER BY m.men_dataEnvio ASC;
+END $$
+DELIMITER ;
+
+-- RF009 - Manter mensagens no chat (CREATE)
+DELIMITER $$
+CREATE PROCEDURE spInserirMensagem(
+    pMen_TextoMensagem VARCHAR(255),
+    pCha_Codigo INT,
+    pUsu_Codigo INT
+)
+BEGIN
+    INSERT INTO Mensagem(men_dataEnvio, men_textoMensagem, cha_codigo, usu_codigo)
+    VALUES(NOW(), pMen_TextoMensagem, pCha_Codigo, pUsu_Codigo); -- NOW() registra hora e data
+END $$
+DELIMITER ;
+
+-- RF009 - Atualizar mensagem
+DELIMITER $$
+CREATE PROCEDURE spAtualizarMensagem(
+    pMen_Codigo INT,
+    pMen_TextoMensagem VARCHAR(255)
+)
+BEGIN
+    UPDATE Mensagem
+    SET men_textoMensagem = pMen_TextoMensagem
+    WHERE men_codigo = pMen_Codigo;
+END $$
+DELIMITER ;
+
+-- RF009 - Deletar mensagem
+DELIMITER $
+CREATE PROCEDURE spDeletarMensagem(
+    pMen_Codigo INT
+)
+BEGIN
+    -- Deleta notificações relacionadas primeiro
+    DELETE FROM NotificacaoMensagem WHERE men_codigo = pMen_Codigo;
+    
+    -- Agora pode deletar a mensagem
+    DELETE FROM Mensagem WHERE men_codigo = pMen_Codigo;
+END $
+DELIMITER ;
+
+-- RF010 - Manter avaliações de serviços (CREATE)
+DELIMITER $$
+CREATE PROCEDURE spInserirAvaliacao(
+    pAva_Nota DOUBLE,
+    pAva_Mensagem VARCHAR(255),
+    pUsu_Codigo INT,
+    pSer_Codigo INT
+)
+BEGIN
+    INSERT INTO Avaliacao(ava_nota, ava_mensagem, usu_codigo, ser_codigo)
+    VALUES(pAva_Nota, pAva_Mensagem, pUsu_Codigo, pSer_Codigo);
+END $$
+DELIMITER ;
+
+-- RF010 - Atualizar avaliação
+DELIMITER $$
+CREATE PROCEDURE spAtualizarAvaliacao(
+    pAva_Codigo INT,
+    pAva_Nota DOUBLE,
+    pAva_Mensagem VARCHAR(255)
+)
+BEGIN
+    UPDATE Avaliacao
+    SET ava_nota = pAva_Nota,
+        ava_mensagem = pAva_Mensagem
+    WHERE ava_codigo = pAva_Codigo;
+END $$
+DELIMITER ;
+
+-- RF010 - Deletar avaliação
+DELIMITER $
+CREATE PROCEDURE spDeletarAvaliacao(
+    pAva_Codigo INT
+)
+BEGIN
+
+    DELETE FROM Avaliacao WHERE ava_codigo = pAva_Codigo;
+END $
+DELIMITER ;
+
+-- RF011 - Consultar avaliações de outros usuários
+DELIMITER $$
+CREATE PROCEDURE spConsultarAvaliacoesUsuario(
+    pUsu_Codigo INT
+)
+BEGIN
+    SELECT a.ava_codigo, a.ava_nota, a.ava_mensagem, 
+           s.ser_nome, s.ser_descricao,
+           u.usu_Nome AS avaliador, u.usu_fotoPerfil
+    FROM Avaliacao a
+    INNER JOIN Servico s ON a.ser_codigo = s.ser_codigo
+    INNER JOIN Usuario u ON a.usu_codigo = u.usu_codigo
+    WHERE s.usu_codigo = pUsu_Codigo
+    ORDER BY a.ava_codigo DESC;
+END $$
+DELIMITER ;
+
+
+-- RF014 - Indicar áreas de interesse
+DELIMITER $$
+CREATE PROCEDURE spInserirUsuarioArea(
+    pUsu_Codigo INT,
+    pAri_Codigo INT
+)
+BEGIN
+    INSERT INTO UsuarioArea(ari_codigo, usu_codigo)
+    VALUES(pAri_Codigo, pUsu_Codigo);
+END $$
+DELIMITER ;
+
+-- RF014 - Remover área de interesse
+DELIMITER $$
+CREATE PROCEDURE spRemoverUsuarioArea(
+    pUsu_Codigo INT,
+    pAri_Codigo INT
+)
+BEGIN
+    DELETE FROM UsuarioArea 
+    WHERE usu_codigo = pUsu_Codigo AND ari_codigo = pAri_Codigo;
+END $$
+DELIMITER ;
+
+-- RF020 - Usuários aceitem pedidos
+DELIMITER $$
+CREATE PROCEDURE spAceitarProposta(
+    pPro_Codigo INT
+)
+BEGIN
+    UPDATE Proposta
+    SET pro_aceita = 1
+    WHERE pro_codigo = pPro_Codigo;
+END $$
+DELIMITER ;
+
+-- RF024 - Exibir saldo atual de moedas do usuário
+DELIMITER $
+CREATE PROCEDURE spExibirSaldoMoedas(
+    pUsu_Codigo INT
+)
+BEGIN
+    SELECT usu_codigo, usu_Nome, usu_saldoMoeda
+    FROM Usuario
+    WHERE usu_codigo = pUsu_Codigo;
+END $
+DELIMITER ;
