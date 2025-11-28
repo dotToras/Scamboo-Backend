@@ -3,9 +3,9 @@ const Habilidade = require('../models/Habilidade');
 class HabilidadeController {
 
   // GET /api/habilidades
-  async index(req, res) {
+  async exibirHabilidades(req, res) {
     try {
-      const habilidades = await Habilidade.findAll();
+      const habilidades = await Habilidade.buscarTodasHabilidades;
       res.json(habilidades);
     } catch (error) {
       console.error(error);
@@ -14,10 +14,10 @@ class HabilidadeController {
   }
 
   // GET /api/habilidades/:id
-  async show(req, res) {
+  async exibirHabilidadeId(req, res) {
     try {
       const { id } = req.params;
-      const habilidade = await Habilidade.findById(id);
+      const habilidade = await Habilidade.buscarHabilidadeId(id);
       
       if (!habilidade) {
         return res.status(404).json({ error: 'Habilidade não encontrada' });
@@ -31,7 +31,7 @@ class HabilidadeController {
   }
 
   // POST /api/habilidades
-  async store(req, res) {
+  async salvarHabilidade(req, res) {
     try {
       const { nome } = req.body;
       
@@ -39,8 +39,8 @@ class HabilidadeController {
         return res.status(400).json({ error: 'Nome é obrigatório' });
       }
 
-      await Habilidade.create(nome);
-      const habilidades = await Habilidade.findAll();
+      await Habilidade.criarHabilidade(nome);
+      const habilidades = await Habilidade;
       
       res.status(201).json({
         message: 'Habilidade criada com sucesso',

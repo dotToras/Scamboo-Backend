@@ -686,5 +686,13 @@ WHERE ser_concluido = 0 AND ser_dataExpiracao >= CURDATE();
 
 SELECT * FROM vwServicosDisponiveis;
 
+-- Exibir Categorias
+CREATE VIEW vwCategorias AS 
+SELECT cat_codigo, cat_nome
+FROM categoria;
 
+-- Exibir Habilidades
+CREATE VIEW vwHabilidades AS 
+SELECT hab_codigo, hab_nome
+FROM habilidade;
 -- TODO: Produtos concluidos por usuario

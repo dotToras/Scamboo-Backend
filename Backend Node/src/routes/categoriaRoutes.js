@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const categoriaController = require('../controllers/categoriaController');
 
-router.get('/', categoriaController.index);
-router.get('/:id', categoriaController.show);
-router.post('/', categoriaController.store);
+router.get('/', categoriaController.exibirCategorias);
+router.get('/:id', categoriaController.exibirCategoriaId);
+router.post('/', categoriaController.salvarCategoria);
 
 module.exports = router;
