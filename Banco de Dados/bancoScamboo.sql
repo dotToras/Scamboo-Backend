@@ -654,13 +654,14 @@ INNER JOIN Usuario USING(usu_codigo);
 
 -- Exibir serviços disponiveis
 CREATE VIEW vwServicosDisponiveis AS 
-SELECT ser_codigo, ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao,cat_nome, usu_nome as 'Criador'
+SELECT ser_codigo, ser_nome, ser_descricao, ser_dataPedido,
+	   ser_dataExpiracao,cat_nome, usu_nome as 'Criador'
 FROM Servico
 INNER JOIN Categoria USING(cat_codigo)
 INNER JOIN Usuario USING(usu_codigo) 
 WHERE ser_concluido = 0 AND ser_dataExpiracao >= CURDATE();
 
-SELECT * FROM vwServicosDisponiveis;
+SELECT * FROM categoria;
 
 -- Exibir Categorias
 CREATE VIEW vwCategorias AS 

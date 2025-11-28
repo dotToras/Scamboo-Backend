@@ -41,13 +41,27 @@ class Servico {
 
   // Criar novo serviço
   static async criarServico(servicoData) {
-    const { nome, descricao, dataExpiracao, usuarioId, categoriaId } = servicoData;
+    try {
+      const { nome, descricao, dataExpiracao, usuarioId, categoriaId } = servicoData;
 
-    const [resultado] = await db.query(`
-      call spInserirServico(?, ?, ?, ?, ?)
-    `, [nome, descricao, dataExpiracao, usuarioId, categoriaId]);
+      // Executar a procedure
+      await db.query(`
+        CALL spInserirServico(?, ?, ?, ?, ?)
+      `, [nome, descricao, dataExpiracao, usuarioId, categoriaId]);
 
-    return await this.findById(resultado.insertId);
+      // Buscar o serviço recém-criado pela view
+      const [rows] = await db.query(`
+        SELECT * FROM vwServicos
+        WHERE ser_nome = ?
+        ORDER BY ser_codigo DESC
+        LIMIT 1
+      `, [nome]);
+
+      return rows[0];
+    } catch (error) {
+      console.error('Erro ao criar serviço:', error.message);
+      throw error;
+    }
   }
 
   // Atualizar serviço -- VER SE VAI SER USADO
