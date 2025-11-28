@@ -456,6 +456,7 @@ END $$
 DELIMITER ;
 
 -- RF005 - Manter pedidos de serviço (CREATE)
+-- TODO: if verificando se o usuario tem moeda pra isso, e tambem insert na tabela de transações pq ao criar gasta 15 moedas
 DELIMITER $$
 CREATE PROCEDURE spInserirServico(
     pSer_Nome VARCHAR(45),
@@ -618,31 +619,6 @@ BEGIN
 END $$
 DELIMITER ;
 
-
--- RF014 - Indicar áreas de interesse
-DELIMITER $$
-CREATE PROCEDURE spInserirUsuarioArea(
-    pUsu_Codigo INT,
-    pAri_Codigo INT
-)
-BEGIN
-    INSERT INTO UsuarioArea(ari_codigo, usu_codigo)
-    VALUES(pAri_Codigo, pUsu_Codigo);
-END $$
-DELIMITER ;
-
--- RF014 - Remover área de interesse
-DELIMITER $$
-CREATE PROCEDURE spRemoverUsuarioArea(
-    pUsu_Codigo INT,
-    pAri_Codigo INT
-)
-BEGIN
-    DELETE FROM UsuarioArea 
-    WHERE usu_codigo = pUsu_Codigo AND ari_codigo = pAri_Codigo;
-END $$
-DELIMITER ;
-
 -- RF020 - Usuários aceitem pedidos
 DELIMITER $$
 CREATE PROCEDURE spAceitarProposta(
@@ -695,4 +671,4 @@ FROM categoria;
 CREATE VIEW vwHabilidades AS 
 SELECT hab_codigo, hab_nome
 FROM habilidade;
--- TODO: Produtos concluidos por usuario
+-- TODO: Servicos concluidos por usuario

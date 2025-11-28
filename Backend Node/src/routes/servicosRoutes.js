@@ -16,7 +16,6 @@ router.delete('/:id', servicoController.deletarServico);
 
 // Rota para concluir serviço
 router.patch('/:id/concluir', servicoController.concluir);
-// Rota para propostas do serviço
-router.get('/:id/propostas', servicoController.getPropostas);
+
 
 module.exports = router;

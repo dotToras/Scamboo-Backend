@@ -112,7 +112,7 @@ class ServicoController {
   async deletarServico(req, res) {
     try {
       const { id } = req.params;
-      const deletado = await Servico.delete(id);
+      const deletado = await Servico.deletar(id);
       
       if (!deletado) {
         return res.status(404).json({ error: 'Serviço não encontrado' });
