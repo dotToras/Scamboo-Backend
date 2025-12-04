@@ -49,7 +49,7 @@ class UsuarioController {
         return res.status(400).json({ error: 'Email já cadastrado' });
       }
 
-      const novoUsuario = await Usuario.create({
+      const novoUsuario = await Usuario.criar({
         email,
         senha,
         tipo: tipo || 0,

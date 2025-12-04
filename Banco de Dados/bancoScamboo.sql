@@ -297,13 +297,13 @@ CALL spInserirUsuario('rafael@gmail.com','R4f4el@2025','foto_rafael.png','Rafael
 
 -- inserts de serviços
 INSERT INTO Servico(ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao, ser_concluido, usu_codigo, cat_codigo) 
-VALUES('Desenvolvimento de site institucional','Criação de site completo para empresa','2025-10-31','2025-11-07',0,1,3);
+VALUES('Desenvolvimento de site institucional','Criação de site completo para empresa','2025-10-31','2025-12-03',0,1,3);
 
 INSERT INTO Servico(ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao, ser_concluido, usu_codigo, cat_codigo) 
-VALUES('App mobile para delivery','Aplicativo Android e iOS para pedidos online','2025-10-31','2025-11-10',0,2,2);
+VALUES('App mobile para delivery','Aplicativo Android e iOS para pedidos online','2025-10-31','2025-12-10',0,2,2);
 
 INSERT INTO Servico(ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao, ser_concluido, usu_codigo, cat_codigo) 
-VALUES('Sistema de gerenciamento','Sistema web para gerenciar estoque e vendas','2025-10-31','2025-11-12',0,3,1);
+VALUES('Sistema de gerenciamento','Sistema web para gerenciar estoque e vendas','2025-10-31','2025-12-10',0,3,1);
 
 
 -- RF003 - O sistema deve permitir que o usuário faça login utilizando e-mail e senha válidos 
