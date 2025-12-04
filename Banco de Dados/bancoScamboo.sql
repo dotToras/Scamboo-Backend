@@ -752,12 +752,11 @@ SELECT
     usu_solicitante.usu_nome AS Solicitante,
     usu_prestador.usu_nome AS PrestadorContratado
 FROM Servico s
-INNER JOIN Categoria c USING(cat_codigo)
-INNER JOIN Usuario usu_solicitante USING(usu_codigo) -- Join para o solicitante
+INNER JOIN Categoria c ON s.cat_codigo = c.cat_codigo
+INNER JOIN Usuario usu_solicitante ON s.usu_codigo = usu_solicitante.usu_codigo -- Join para o solicitante
 INNER JOIN Proposta p ON s.ser_codigo = p.ser_codigo AND p.pro_aceita = 1 -- Busca a proposta aceita
-INNER JOIN Usuario usu_prestador USING(usu_codigo) -- Join para o prestador
+INNER JOIN Usuario usu_prestador ON p.usu_codigo = usu_prestador.usu_codigo -- Join para o prestador
 WHERE s.ser_concluido = 1;
-
 
 
 -- RF023 O sistema deve permitir que o usuário receba moedas ao concluir um pedido de serviço como prestador 
