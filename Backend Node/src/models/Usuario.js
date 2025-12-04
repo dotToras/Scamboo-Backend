@@ -2,20 +2,18 @@ const db = require('../config/database');
 
 class Usuario {
 
-  // Buscar todos os usuários
-  static async findAll() {
+  static async buscarTodos() {
     const [rows] = await db.query(`
-      SELECT u.*, c.cre_email, c.cre_tipo, c.cre_dataCadastro
+      SELECT u.*, c.cre_email, c.cre_dataCadastro
       FROM Usuario u
       INNER JOIN Credencial c ON u.cre_codigo = c.cre_codigo
     `);
     return rows; // Retorna array com todos os usuários
   }
 
-  // Buscar usuário por ID
-  static async findById(id) {
+  static async buscarPorId(id) {
     const [rows] = await db.query(`
-      SELECT u.*, c.cre_email, c.cre_tipo, c.cre_dataCadastro
+      SELECT u.*, c.cre_email, c.cre_dataCadastro
       FROM Usuario u
       INNER JOIN Credencial c ON u.cre_codigo = c.cre_codigo
       WHERE u.usu_codigo = ?
@@ -23,10 +21,9 @@ class Usuario {
     return rows[0]; // Retorna o usuário encontrado
   }
 
-  // Buscar usuário por email - complementa o create abaixo
-  static async findByEmail(email) {
+  static async buscarPorEmail(email) {
     const [rows] = await db.query(`
-      SELECT u.*, c.cre_email, c.cre_Senha, c.cre_tipo, c.cre_dataCadastro
+      SELECT u.*, c.cre_email, c.cre_Senha, c.cre_dataCadastro
       FROM Usuario u
       INNER JOIN Credencial c ON u.cre_codigo = c.cre_codigo
       WHERE c.cre_email = ?
@@ -34,56 +31,58 @@ class Usuario {
     return rows[0]; // Retorna o usuário encontrado
   }
 
-  // Criar novo usuário usando procedure
-  static async create(userData) {
+  static async criar(userData) {
     try {
-      const { email, senha, tipo, fotoPerfil, nome, dataNascimento, status, linkPortifolio, linkLinkedin } = userData;
+      const { email, senha, fotoPerfil, nome, dataNascimento, status, linkPortifolio, linkLinkedin } = userData;
 
+      // Executa a procedure spInserirUsuario que cuida do INSERT em Credencial e Usuario
       await db.query(
-        'CALL spInserirUsuario(?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [email, senha, tipo, fotoPerfil, nome, dataNascimento, status, linkPortifolio, linkLinkedin]
+        'CALL spInserirUsuario(?, ?, ?, ?, ?, ?, ?, ?)',
+        [email, senha, fotoPerfil, nome, dataNascimento, status, linkPortifolio, linkLinkedin]
       );
 
-      return await this.findByEmail(email);
+      // Busca o usuário recém-criado para retornar
+      return await this.buscarPorEmail(email);
     } catch (error) {
       console.error('Erro ao criar usuário:', error.message);
-      throw error;  // Passa o erro para a controller tratar
+      throw error;
     }
   }
 
-  // Atualizar usuário
-  static async update(id, userData) {
-    const { fotoPerfil, nome, status, linkPortifolio, linkLinkedin } = userData;
-
-    await db.query(`
-      UPDATE Usuario 
-      SET usu_fotoPerfil = ?, 
-          usu_Nome = ?, 
-          usu_status = ?, 
-          usu_linkPortifolio = ?, 
-          usu_linkLinkedin = ?
-      WHERE usu_codigo = ?
-    `, [fotoPerfil, nome, status, linkPortifolio, linkLinkedin, id]);
-
-    return await this.findById(id);
+  static async verificarLogin(email, senha) {
+    const [rows] = await db.query(
+      'CALL spVerificarLogin(?, ?)',
+      [email, senha]
+    );
+    // spVerificarLogin retorna o código da Credencial, Usuário e Status
+    return rows[0][0]; 
   }
 
-  // Deletar usuário
-  static async delete(id) {
+  static async atualizar(id, userData) {
+    const { fotoPerfil, nome, dataNascimento, linkPortifolio, linkLinkedin } = userData;
+
+    await db.query(
+      'CALL spAtualizarPerfil(?, ?, ?, ?, ?, ?)',
+      [id, fotoPerfil, nome, dataNascimento, linkPortifolio, linkLinkedin]
+    );
+
+    // Retorna o usuário atualizado
+    return await this.buscarPorId(id);
+  }
+
+  static async deletar(id) {
     // Buscar código da credencial
-    const usuario = await this.findById(id);
+    const usuario = await this.buscarPorId(id);
     if (!usuario) return false;
 
-    // Deletar usuário
+    // Deletar usuário e depois credencial para respeitar chaves estrangeiras
     await db.query('DELETE FROM Usuario WHERE usu_codigo = ?', [id]);
-    // Deletar credencial
     await db.query('DELETE FROM Credencial WHERE cre_codigo = ?', [usuario.cre_codigo]);
 
     return true;
   }
 
-  // Buscar habilidades do usuário
-  static async findHabilidades(id) {
+  static async buscarHabilidades(id) {
     const [rows] = await db.query(`
       SELECT h.*
       FROM Habilidade h
@@ -93,8 +92,7 @@ class Usuario {
     return rows;
   }
 
-  // Adicionar habilidade ao usuário
-  static async addHabilidade(usuarioId, habilidadeId) {
+  static async adicionarHabilidade(usuarioId, habilidadeId) {
     await db.query(
       'INSERT INTO UsuarioHabilidade (usu_codigo, hab_codigo) VALUES (?, ?)',
       [usuarioId, habilidadeId]
@@ -102,24 +100,13 @@ class Usuario {
     return true;
   }
 
-  // Buscar áreas de interesse do usuário
-  static async findAreasInteresse(id) {
-    const [rows] = await db.query(`
-      SELECT a.*
-      FROM AreaInteresse a
-      INNER JOIN UsuarioArea ua ON a.ari_codigo = ua.ari_codigo
-      WHERE ua.usu_codigo = ?
-    `, [id]);
-    return rows;
-  }
-
-  // Adicionar área de interesse ao usuário
-  static async addAreaInteresse(usuarioId, areaId) {
-    await db.query(
-      'INSERT INTO UsuarioArea (usu_codigo, ari_codigo) VALUES (?, ?)',
-      [usuarioId, areaId]
+  static async exibirSaldoMoedas(id) {
+    const [rows] = await db.query(
+      'CALL spExibirSaldoMoedas(?)',
+      [id]
     );
-    return true;
+    // spExibirSaldoMoedas retorna usu_codigo, usu_Nome, usu_saldoMoeda
+    return rows[0][0]; 
   }
 }
 

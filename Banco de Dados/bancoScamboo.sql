@@ -431,7 +431,38 @@ VALUES(
 END $$
 DELIMITER ;
 
+-- 
+DELIMITER $$
+CREATE TRIGGER tgr_verificarPalavraProibida
+BEFORE INSERT ON Servico
+FOR EACH ROW
+BEGIN
+    IF (
+		-- conta se houve ocorrencias aonde houvessem nome/descrição de serviços
+        SELECT COUNT(*)
+        FROM PalavraProibida
+        WHERE 
+            LOWER(NEW.ser_nome) LIKE CONCAT('%', LOWER(pap_termo), '%') OR
+            LOWER(NEW.ser_descricao) LIKE CONCAT('%', LOWER(pap_termo), '%')
+    ) > 0 THEN	-- se houver, cancela a inserção e manda o erro
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'O nome ou a descrição do serviço contém uma palavra proibida';
+    END IF;
+END $$
+DELIMITER ;
 
+DELIMITER $$
+CREATE PROCEDURE spInserirPalavrasProibidas(
+    ppap_termo varchar(45)
+)
+BEGIN
+    INSERT INTO PalavraProibida(pap_termo)
+    VALUES(ppap_termo);
+END $$
+DELIMITER ;
+
+CALL spInserirPalavrasProibidas("spam");
+CALL spInserirPalavrasProibidas("teste_ilegal");
+CALL spInserirPalavrasProibidas("venda_proibida");
 -- inserts de proposta
 INSERT INTO Proposta(pro_descricao, pro_aceita, usu_codigo, ser_codigo) 
 VALUES('Posso desenvolver o site institucional para você',0,2,1);
@@ -466,8 +497,25 @@ CREATE PROCEDURE spInserirServico(
     pCat_Codigo INT
 )
 BEGIN
-    INSERT INTO Servico(ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao, ser_concluido, usu_codigo, cat_codigo)
-    VALUES(pSer_Nome, pSer_Descricao, CURDATE(), pSer_DataExpiracao, 0, pUsu_Codigo, pCat_Codigo);
+
+    DECLARE v_saldo_atual INT;
+
+    SELECT usu_saldoMoeda INTO v_saldo_atual
+    FROM Usuario
+    WHERE usu_codigo = pUsu_Codigo;
+
+    IF v_saldo_atual < 15 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Saldo de moeda insuficiente para criar o serviço (Requer 15 moedas).';
+    ELSE
+  
+        INSERT INTO Servico(ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao, ser_concluido, usu_codigo, cat_codigo)
+        VALUES(pSer_Nome, pSer_Descricao, CURDATE(), pSer_DataExpiracao, 0, pUsu_Codigo, pCat_Codigo);
+
+        -- registra a transacao
+        INSERT INTO TransacoesMoeda(trm_valor, trm_date, trm_tipo, usu_codigo, ser_codigo)
+        VALUES(15, CURDATE(), 1, pUsu_Codigo, LAST_INSERT_ID());
+        
+    END IF;
 END $$
 DELIMITER ;
 
@@ -531,7 +579,7 @@ CREATE PROCEDURE spInserirMensagem(
 )
 BEGIN
     INSERT INTO Mensagem(men_dataEnvio, men_textoMensagem, cha_codigo, usu_codigo)
-    VALUES(NOW(), pMen_TextoMensagem, pCha_Codigo, pUsu_Codigo); -- NOW() registra hora e data
+    VALUES(NOW(), pMen_TextoMensagem, pCha_Codigo, pUsu_Codigo); 
 END $$
 DELIMITER ;
 
@@ -659,20 +707,20 @@ SELECT ser_codigo, ser_nome, ser_descricao, ser_dataPedido,
 FROM Servico
 INNER JOIN Categoria USING(cat_codigo)
 INNER JOIN Usuario USING(usu_codigo) 
-WHERE ser_concluido = 0 AND ser_dataExpiracao >= CURDATE();
+WHERE ser_concluido = 0 AND ser_dataExpiracao >= CURDATE()
+ORDER BY ser_dataExpiracao;
 
-SELECT * FROM categoria;
+SELECT * FROM vwServicosDisponiveis;
 
 -- Exibir Categorias
 CREATE VIEW vwCategorias AS 
 SELECT cat_codigo, cat_nome
-FROM categoria;
+FROM Categoria;
 
 -- Exibir Habilidades
 CREATE VIEW vwHabilidades AS 
 SELECT hab_codigo, hab_nome
 FROM habilidade;
--- TODO: Servicos concluidos por usuario
 
 -- Exibir as notificações
 CREATE VIEW vwNotificacoesProposta AS
@@ -692,3 +740,55 @@ INNER JOIN Servico s ON np.ser_codigo = s.ser_codigo
 INNER JOIN Usuario u ON s.usu_codigo = u.usu_codigo;
 
 SELECT * FROM vwNotificacoesProposta;
+
+-- TODO: Servicos concluidos por usuario
+CREATE VIEW vwServicosConcluidos AS 
+SELECT 
+    s.ser_codigo,
+    s.ser_nome,
+    s.ser_descricao,
+    c.cat_nome AS Categoria,
+    s.ser_dataPedido,
+    usu_solicitante.usu_nome AS Solicitante,
+    usu_prestador.usu_nome AS PrestadorContratado
+FROM Servico s
+INNER JOIN Categoria c USING(cat_codigo)
+INNER JOIN Usuario usu_solicitante USING(usu_codigo) -- Join para o solicitante
+INNER JOIN Proposta p ON s.ser_codigo = p.ser_codigo AND p.pro_aceita = 1 -- Busca a proposta aceita
+INNER JOIN Usuario usu_prestador USING(usu_codigo) -- Join para o prestador
+WHERE s.ser_concluido = 1;
+
+
+
+-- RF023 O sistema deve permitir que o usuário receba moedas ao concluir um pedido de serviço como prestador 
+DELIMITER $$
+CREATE PROCEDURE spConcluirServico(
+    pSer_Codigo INT
+)
+BEGIN
+    DECLARE v_usu_prestador_codigo INT;
+
+    -- busca codigo do prestador
+    SELECT usu_codigo INTO v_usu_prestador_codigo
+    FROM Proposta
+    WHERE ser_codigo = pSer_Codigo AND pro_aceita = 1
+    LIMIT 1; -- Limita a 1 pois apenas uma proposta pode ser aceita
+
+    -- Verifica se um prestador aceito foi encontrado
+    IF v_usu_prestador_codigo IS NOT NULL THEN
+
+        -- atualiza o status do serviço para CONCLUÍDO
+        UPDATE Servico
+        SET ser_concluido = 1
+        WHERE ser_codigo = pSer_Codigo;
+
+
+        INSERT INTO TransacoesMoeda(trm_valor, trm_date, trm_tipo, usu_codigo, ser_codigo)
+        VALUES(15, CURDATE(), 0, v_usu_prestador_codigo, pSer_Codigo);
+        
+    ELSE
+        -- Se não houver proposta aceita, o serviço não pode ser concluído e pago.
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Serviço não pode ser concluído: nenhuma proposta foi aceita para este pedido.';
+    END IF;
+END $$
+DELIMITER ;
