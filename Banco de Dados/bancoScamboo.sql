@@ -673,3 +673,22 @@ CREATE VIEW vwHabilidades AS
 SELECT hab_codigo, hab_nome
 FROM habilidade;
 -- TODO: Servicos concluidos por usuario
+
+-- Exibir as notificações
+CREATE VIEW vwNotificacoesProposta AS
+SELECT 
+    np.nop_codigo        AS codigo,
+    np.nop_titulo        AS titulo,
+    np.nop_mensagem      AS mensagem,
+    np.nop_foiLida       AS foiLida,
+    np.nop_data          AS data,
+    np.usu_codigo        AS usuarioNotificado,
+    s.ser_codigo         AS codigoRelacionado,
+    'Proposta'           AS tipo,
+    u.usu_nome           AS remetente,
+    s.ser_nome           AS servicoRelacionado
+FROM NotificacaoProposta np
+INNER JOIN Servico s ON np.ser_codigo = s.ser_codigo
+INNER JOIN Usuario u ON s.usu_codigo = u.usu_codigo;
+
+SELECT * FROM vwNotificacoesProposta;
