@@ -65,21 +65,6 @@ CREATE TABLE UsuarioHabilidade (
     
 );
 
-CREATE TABLE AreaInteresse ( 
-
-	ari_codigo int primary key auto_increment,
-    ari_nome varchar(45)
-
-);
-
-CREATE TABLE UsuarioArea (
-
-	ari_codigo int,
-    usu_codigo int,
-	FOREIGN KEY(ari_codigo) REFERENCES AreaInteresse(ari_codigo),
-    FOREIGN KEY(usu_codigo) REFERENCES Usuario(usu_codigo)
-    
-);
 
 CREATE TABLE Chat (
 
@@ -245,28 +230,7 @@ CALL spInserirCategoria("Suporte Técnico");
 CALL spInserirCategoria("Consultoria");
 CALL spInserirCategoria("Análise de Dados");
 CALL spInserirCategoria("UX/UI");
-/* VERIFICAR SE ARMAZENAREMOS NO BANCO OU PUXAREMOS DE UMA API EXTERNA -----
 
-DELIMITER $$
-CREATE PROCEDURE spInserirPalavrasProibidas(
-    ppap_termo varchar(45)
-)
- 
-BEGIN
- 
-	INSERT INTO PalavraProibida(pap_termo)
-	VALUES(ppap_termo);
- 
-END $$
- 
-DELIMITER ;
-
-*/
-
-/*
-RF000 - O sistema deve permitir que o usuário se cadastre 
-RF021 - O sistema deve atribuir moedas ao usuário no momento do cadastro 
- */
 DELIMITER $$
 CREATE PROCEDURE spInserirUsuario(
     pCre_Email VARCHAR(90),
@@ -296,14 +260,15 @@ CALL spInserirUsuario('larissa@gmail.com','L4r1ss@2025','foto_larissa.png','Lari
 CALL spInserirUsuario('rafael@gmail.com','R4f4el@2025','foto_rafael.png','Rafael Souza','1998-11-11',1,'https://portfolio-rafael.com','https://linkedin.com/in/rafael');
 
 -- inserts de serviços
-INSERT INTO Servico(ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao, ser_concluido, usu_codigo, cat_codigo) 
-VALUES('Desenvolvimento de site institucional','Criação de site completo para empresa','2025-10-31','2025-11-07',0,1,3);
 
 INSERT INTO Servico(ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao, ser_concluido, usu_codigo, cat_codigo) 
-VALUES('App mobile para delivery','Aplicativo Android e iOS para pedidos online','2025-10-31','2025-11-10',0,2,2);
+VALUES('Desenvolvimento de site institucional','Criação de site completo para empresa','2025-10-31','2025-12-03',0,1,3);
 
 INSERT INTO Servico(ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao, ser_concluido, usu_codigo, cat_codigo) 
-VALUES('Sistema de gerenciamento','Sistema web para gerenciar estoque e vendas','2025-10-31','2025-11-12',0,3,1);
+VALUES('App mobile para delivery','Aplicativo Android e iOS para pedidos online','2025-10-31','2025-12-10',0,2,2);
+
+INSERT INTO Servico(ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao, ser_concluido, usu_codigo, cat_codigo) 
+VALUES('Sistema de gerenciamento','Sistema web para gerenciar estoque e vendas','2025-10-31','2025-12-10',0,3,1);
 
 
 -- RF003 - O sistema deve permitir que o usuário faça login utilizando e-mail e senha válidos 
@@ -327,23 +292,26 @@ DELIMITER ;
 /* RF004 – O sistema deve permitir que o usuário mantenha seu perfil de usuário */
 DELIMITER $$
 CREATE PROCEDURE spAtualizarPerfil(
-IN pusu_codigo int,
-IN pusu_fotoPerfil VARCHAR(255),
-IN pusu_nome VARCHAR(45),
-IN pusu_dataNascimento date,
-IN pusu_linkPortifolio varchar(255),
-IN pusu_linkLinkedin varchar(255)
+    IN pusu_codigo INT,
+    IN pusu_fotoPerfil VARCHAR(255),
+    IN pusu_nome VARCHAR(45),
+    IN pusu_dataNascimento DATE,
+    IN pusu_linkPortifolio VARCHAR(255),
+    IN pusu_linkLinkedin VARCHAR(255)
 )
 BEGIN
-
-	UPDATE Usuario 
-    SET usu_fotoPerfil = pusu_fotoPerfil 
-		AND usu_nome = pusu_nome
-		AND usu_dataNascimento = pusu_dataNascimento AND usu_linkPortfolio = pusu_linkPortifolio
-		AND usu_linkLinkedin = pusu_linkLinkedin
-     WHERE usu_codigo = pusu_codigo;
+    UPDATE Usuario
+    SET 
+        usu_fotoPerfil = COALESCE(pusu_fotoPerfil, usu_fotoPerfil),
+        usu_nome = COALESCE(pusu_nome, usu_nome),
+        usu_dataNascimento = COALESCE(pusu_dataNascimento, usu_dataNascimento),
+        usu_linkPortifolio = COALESCE(pusu_linkPortifolio, usu_linkPortifolio),
+        usu_linkLinkedin = COALESCE(pusu_linkLinkedin, usu_linkLinkedin)
+    WHERE usu_codigo = pusu_codigo;
 
 END $$
+
+
 DELIMITER ;
 
 -- RF006 – O sistema deve permitir que o usuário busque por pedidos de serviços
@@ -428,6 +396,40 @@ VALUES(
         new.ser_codigo
         );
         
+END $$
+
+DELIMITER ;
+
+
+DELIMITER $$
+CREATE TRIGGER NotificarMensagem AFTER INSERT ON Mensagem
+FOR EACH ROW
+BEGIN
+
+    INSERT INTO Notificacao (
+        not_titulo, 
+        not_mensagem, 
+        not_foiLida, 
+        not_data, 
+        usu_codigo,      
+        cha_codigo_ref  
+    )
+    VALUES (
+
+        CONCAT('Nova Mensagem no Chat: ', NEW.cha_codigo), 
+        CONCAT((SELECT usu_nome FROM Usuario WHERE usu_codigo = NEW.usu_codigo), ' enviou uma mensagem: ', NEW.men_textoMensagem), 
+        0, -- Não Lida
+        NOW(), 
+        (
+            SELECT uc.usu_codigo -- codigoo destinario
+            FROM UsuarioChat uc
+            WHERE uc.cha_codigo = NEW.cha_codigo
+			AND uc.usu_codigo != NEW.usu_codigo -- é o unico usuario q n é o criador 
+            LIMIT 1 -- Limita a 1, pois é um chat de 2 pessoas
+        ),
+        NEW.cha_codigo 
+    );
+    
 END $$
 DELIMITER ;
 
@@ -562,7 +564,7 @@ CREATE PROCEDURE spVisualizarHistoricoMensagens(
 )
 BEGIN
     SELECT m.men_codigo, m.men_dataEnvio, m.men_textoMensagem, 
-           u.usu_codigo, u.usu_Nome, u.usu_fotoPerfil
+           u.usu_codigo, u.usu_Nome, u.usu_fotoPerfil, m.cha_codigo
     FROM Mensagem m
     INNER JOIN Usuario u ON m.usu_codigo = u.usu_codigo
     WHERE m.cha_codigo = pCha_Codigo
@@ -572,15 +574,29 @@ DELIMITER ;
 
 -- RF009 - Manter mensagens no chat (CREATE)
 DELIMITER $$
+
 CREATE PROCEDURE spInserirMensagem(
-    pMen_TextoMensagem VARCHAR(255),
-    pCha_Codigo INT,
-    pUsu_Codigo INT
+    IN pMen_TextoMensagem VARCHAR(255),
+    IN pCha_Codigo INT,
+    IN pUsu_Codigo INT
 )
 BEGIN
-    INSERT INTO Mensagem(men_dataEnvio, men_textoMensagem, cha_codigo, usu_codigo)
-    VALUES(NOW(), pMen_TextoMensagem, pCha_Codigo, pUsu_Codigo); 
+    DECLARE v_men_codigo INT;
+
+    INSERT INTO Mensagem (men_dataEnvio, men_textoMensagem, cha_codigo, usu_codigo)
+    VALUES (NOW(), pMen_TextoMensagem, pCha_Codigo, pUsu_Codigo);
+
+
+    SET v_men_codigo = LAST_INSERT_ID();
+
+    SELECT m.men_codigo, m.men_textoMensagem, m.men_dataEnvio,
+        m.cha_codigo, m.usu_codigo, u.usu_nome, u.usu_fotoPerfil
+    FROM Mensagem m
+    JOIN Usuario u USING(usu_codigo)
+    WHERE m.men_codigo = v_men_codigo;
+
 END $$
+
 DELIMITER ;
 
 -- RF009 - Atualizar mensagem
@@ -662,11 +678,12 @@ BEGIN
     FROM Avaliacao a
     INNER JOIN Servico s ON a.ser_codigo = s.ser_codigo
     INNER JOIN Usuario u ON a.usu_codigo = u.usu_codigo
-    WHERE s.usu_codigo = pUsu_Codigo
     ORDER BY a.ava_codigo DESC;
 END $$
 DELIMITER ;
 
+select * from Avaliacao
+CALL spConsultarAvaliacoesUsuario(1)
 -- RF020 - Usuários aceitem pedidos
 DELIMITER $$
 CREATE PROCEDURE spAceitarProposta(
@@ -723,24 +740,6 @@ SELECT hab_codigo, hab_nome
 FROM Habilidade;
 
 
-CREATE VIEW vwServicosConcluidos AS 
-SELECT 
-    s.ser_codigo,
-    s.ser_nome,
-    s.ser_descricao,
-    c.cat_nome AS Categoria,
-    s.ser_dataPedido,
-    usu_solicitante.usu_nome AS Solicitante,
-    usu_prestador.usu_nome AS PrestadorContratado
-FROM Servico s
-INNER JOIN Categoria c USING(cat_codigo)
-INNER JOIN Usuario usu_solicitante USING(usu_codigo) -- Join para o solicitante
-INNER JOIN Proposta p ON s.ser_codigo = p.ser_codigo AND p.pro_aceita = 1 -- Busca a proposta aceita
-INNER JOIN Usuario usu_prestador USING(usu_codigo) -- Join para o prestador
-WHERE s.ser_concluido = 1;
-
-
-
 -- RF023 O sistema deve permitir que o usuário receba moedas ao concluir um pedido de serviço como prestador 
 DELIMITER $$
 CREATE PROCEDURE spConcluirServico(
@@ -773,3 +772,73 @@ BEGIN
     END IF;
 END $$
 DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE spInserirChat(
+    IN pCha_Nome VARCHAR(255),
+    IN pChar_Descricao VARCHAR(500),
+    IN pUsu_Codigo_Criador INT
+)
+BEGIN
+
+    DECLARE v_cha_codigo INT;
+
+    INSERT INTO Chat (cha_nome, char_descricao)
+    VALUES (pCha_Nome, pChar_Descricao);
+
+    SET v_cha_codigo = LAST_INSERT_ID();
+
+  
+    INSERT INTO UsuarioChat (cha_codigo, usu_codigo)
+    VALUES (v_cha_codigo, pUsu_Codigo_Criador);
+
+  
+    SELECT cha_codigo, cha_nome, char_descricao
+    FROM Chat
+    WHERE cha_codigo = v_cha_codigo;
+
+END $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE spAdicionarUsuarioChat(
+    IN pCha_Codigo INT,
+    IN pUsu_Codigo INT
+)
+BEGIN
+
+    INSERT INTO UsuarioChat (cha_codigo, usu_codigo)
+    VALUES (pCha_Codigo, pUsu_Codigo);
+    
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE spListarMembrosChat(
+    IN pCha_Codigo INT
+)
+BEGIN
+
+    SELECT u.usu_codigo, u.usu_nome, u.usu_fotoPerfil
+    FROM Usuario u
+    JOIN UsuarioChat uc USING(usu_codigo) 
+    WHERE uc.cha_codigo = pCha_Codigo;
+    
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+-- Procedure para listar todos os chats de um usuário.
+CREATE PROCEDURE spListarChatsUsuario(
+    IN pUsu_Codigo INT
+)
+BEGIN
+    SELECT c.cha_codigo, c.cha_nome, c.char_descricao
+    FROM Chat c
+    INNER JOIN UsuarioChat uc USING(cha_codigo) 
+    WHERE uc.usu_codigo = pUsu_Codigo
+    ORDER BY c.cha_codigo DESC; 
+    
+END $$
