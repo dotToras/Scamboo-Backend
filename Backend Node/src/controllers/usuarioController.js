@@ -19,11 +19,11 @@ class UsuarioController {
       const { id } = req.params;
       // Chama o model para buscar o usuário e espera o resultado
       const usuario = await Usuario.buscarPorId(id);
-      
+
       if (!usuario) {
         return res.status(404).json({ error: 'Usuário não encontrado' });
       }
-      
+
       res.json(usuario); // Retorna o usuário encontrado
     } catch (error) {
       console.error(error);
@@ -35,11 +35,11 @@ class UsuarioController {
   async store(req, res) {
     try {
       const { email, senha, tipo, fotoPerfil, nome, dataNascimento, status, linkPortifolio, linkLinkedin } = req.body;
-      
+
       // Validação básica
       if (!email || !senha || !nome || !dataNascimento) {
-        return res.status(400).json({ 
-          error: 'Campos obrigatórios: email, senha, nome, dataNascimento' 
+        return res.status(400).json({
+          error: 'Campos obrigatórios: email, senha, nome, dataNascimento'
         });
       }
 
@@ -72,28 +72,29 @@ class UsuarioController {
   async update(req, res) {
     try {
       const { id } = req.params;
-      const { fotoPerfil, nome, status, linkPortifolio, linkLinkedin } = req.body;
 
+      // Busca o usuário atual
       const usuario = await Usuario.buscarPorId(id);
-      if (!usuario) {
-        return res.status(404).json({ error: 'Usuário não encontrado' });
-      }
+      if (!usuario) return res.status(404).json({ error: 'Usuário não encontrado' });
 
-      // Atualiza apenas os campos fornecidos
-      const usuarioAtualizado = await Usuario.atualizar(id, {
-        fotoPerfil: fotoPerfil || usuario.usu_fotoPerfil,
-        nome: nome || usuario.usu_Nome,
-        status: status !== undefined ? status : usuario.usu_status,
-        linkPortifolio: linkPortifolio || usuario.usu_linkPortifolio,
-        linkLinkedin: linkLinkedin || usuario.usu_linkLinkedin
-      });
+      // Atualiza apenas os campos enviados, mantendo os outros
+      const dadosAtualizados = {
+        fotoPerfil: req.body.usu_fotoPerfil || usuario.usu_fotoPerfil,
+        nome: req.body.usu_nome || usuario.usu_nome,
+        dataNascimento: req.body.usu_dataNascimento || usuario.usu_dataNascimento,
+        linkPortifolio: req.body.usu_linkPortifolio || usuario.usu_linkPortifolio,
+        linkLinkedin: req.body.usu_linkLinkedin || usuario.usu_linkLinkedin
+      };
 
-      res.json(usuarioAtualizado);
+      await Usuario.atualizar(id, dadosAtualizados);
+
+      res.json({ message: "Usuário atualizado com sucesso" });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Erro ao atualizar usuário' });
     }
   }
+
 
   // DELETE /api/usuarios/:id
   async destroy(req, res) {
@@ -101,7 +102,7 @@ class UsuarioController {
       const { id } = req.params;
 
       const deletado = await Usuario.deletar(id);
-      
+
       if (!deletado) {
         return res.status(404).json({ error: 'Usuário não encontrado' });
       }

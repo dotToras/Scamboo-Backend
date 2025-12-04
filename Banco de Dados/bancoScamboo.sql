@@ -6,7 +6,7 @@ use dbScamboo;
 CREATE TABLE Credencial (
 
 	cre_codigo int primary key auto_increment,
-    cre_email varchar(90),
+    cre_email varchar(90),	
     cre_Senha varchar(45),
     cre_dataCadastro date
 
@@ -327,23 +327,24 @@ DELIMITER ;
 /* RF004 – O sistema deve permitir que o usuário mantenha seu perfil de usuário */
 DELIMITER $$
 CREATE PROCEDURE spAtualizarPerfil(
-IN pusu_codigo int,
-IN pusu_fotoPerfil VARCHAR(255),
-IN pusu_nome VARCHAR(45),
-IN pusu_dataNascimento date,
-IN pusu_linkPortifolio varchar(255),
-IN pusu_linkLinkedin varchar(255)
+    IN pusu_codigo INT,
+    IN pusu_fotoPerfil VARCHAR(255),
+    IN pusu_nome VARCHAR(45),
+    IN pusu_dataNascimento DATE,
+    IN pusu_linkPortifolio VARCHAR(255),
+    IN pusu_linkLinkedin VARCHAR(255)
 )
 BEGIN
-
-	UPDATE Usuario 
-    SET usu_fotoPerfil = pusu_fotoPerfil 
-		AND usu_nome = pusu_nome
-		AND usu_dataNascimento = pusu_dataNascimento AND usu_linkPortfolio = pusu_linkPortifolio
-		AND usu_linkLinkedin = pusu_linkLinkedin
-     WHERE usu_codigo = pusu_codigo;
-
+    UPDATE Usuario
+    SET 
+        usu_fotoPerfil = COALESCE(pusu_fotoPerfil, usu_fotoPerfil),
+        usu_nome = COALESCE(pusu_nome, usu_nome),
+        usu_dataNascimento = COALESCE(pusu_dataNascimento, usu_dataNascimento),
+        usu_linkPortifolio = COALESCE(pusu_linkPortifolio, usu_linkPortifolio),
+        usu_linkLinkedin = COALESCE(pusu_linkLinkedin, usu_linkLinkedin)
+    WHERE usu_codigo = pusu_codigo;
 END $$
+
 DELIMITER ;
 
 -- RF006 – O sistema deve permitir que o usuário busque por pedidos de serviços

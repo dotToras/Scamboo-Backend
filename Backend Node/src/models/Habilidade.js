@@ -14,7 +14,7 @@ class Habilidade {
   // Criar nova habilidade
   static async criarHabilidade(nome) {
     const [resultado] = await db.query('CALL spInserirHabilidades(?)', [nome]);
-    return await this.findAll();
+    return await this.buscarTodasHabilidades();
   }
 }
 
