@@ -64,7 +64,7 @@ class Proposta {
 
   // Aceitar proposta
   static async aceitar(id) {
-    await db.query('UPDATE Proposta SET pro_aceita = 1 WHERE pro_codigo = ?', [id]);
+    await db.query('CALL spAceitarProposta(?)', [id]);
     return await this.findById(id);
   }
 
@@ -78,6 +78,16 @@ class Proposta {
   static async delete(id) {
     const [result] = await db.query('DELETE FROM Proposta WHERE pro_codigo = ?', [id]);
     return result.affectedRows > 0;
+  }
+
+  // Buscar notificações da proposta
+  static async findNotificacoes(propostaId) {
+    const [rows] = await db.query(`
+      SELECT * FROM vwNotificacoesProposta
+      WHERE codigoRelacionado = ?
+      ORDER BY data DESC
+    `, [propostaId]);
+    return rows;
   }
 }
 

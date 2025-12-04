@@ -54,6 +54,18 @@ class PropostaController {
     }
   }
 
+  // GET /api/propostas/:propostaId/notificacoes
+  async notificacoes(req, res) {
+    try {
+      const { propostaId } = req.params;
+      const notificacoes = await Proposta.findNotificacoes(propostaId);
+      res.json(notificacoes);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Erro ao buscar notificações' });
+    }
+  }
+
   // POST /api/propostas
   async store(req, res) {
     try {
