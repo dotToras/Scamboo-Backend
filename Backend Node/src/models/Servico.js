@@ -40,7 +40,7 @@ class Servico {
   }
 
   // Criar novo serviço usando spInserirServico
-  static async criar(servicoData) {
+  static async criarServico(servicoData) {
     try {
       const { nome, descricao, dataExpiracao, usuarioId, categoriaId } = servicoData;
 

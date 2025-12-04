@@ -55,19 +55,18 @@ class Usuario {
       [email, senha]
     );
     // spVerificarLogin retorna o código da Credencial, Usuário e Status
-    return rows[0][0]; 
+    return rows[0][0];
   }
 
-  static async atualizar(id, userData) {
-    const { fotoPerfil, nome, dataNascimento, linkPortifolio, linkLinkedin } = userData;
+  static async atualizar(id, dados) {
+    const { fotoPerfil, nome, dataNascimento, linkPortifolio, linkLinkedin } = dados;
 
-    await db.query(
-      'CALL spAtualizarPerfil(?, ?, ?, ?, ?, ?)',
+    const [result] = await db.query(
+      `CALL spAtualizarPerfil(?, ?, ?, ?, ?, ?)`,
       [id, fotoPerfil, nome, dataNascimento, linkPortifolio, linkLinkedin]
     );
 
-    // Retorna o usuário atualizado
-    return await this.buscarPorId(id);
+    return result;
   }
 
   static async deletar(id) {
@@ -106,7 +105,7 @@ class Usuario {
       [id]
     );
     // spExibirSaldoMoedas retorna usu_codigo, usu_Nome, usu_saldoMoeda
-    return rows[0][0]; 
+    return rows[0][0];
   }
 }
 

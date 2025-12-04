@@ -5,7 +5,7 @@ class HabilidadeController {
   // GET /api/habilidades
   async exibirHabilidades(req, res) {
     try {
-      const habilidades = await Habilidade.buscarTodasHabilidades;
+      const habilidades = await Habilidade.buscarTodasHabilidades();
       res.json(habilidades);
     } catch (error) {
       console.error(error);
@@ -18,11 +18,11 @@ class HabilidadeController {
     try {
       const { id } = req.params;
       const habilidade = await Habilidade.buscarHabilidadeId(id);
-      
+
       if (!habilidade) {
         return res.status(404).json({ error: 'Habilidade não encontrada' });
       }
-      
+
       res.json(habilidade);
     } catch (error) {
       console.error(error);
@@ -34,14 +34,14 @@ class HabilidadeController {
   async salvarHabilidade(req, res) {
     try {
       const { nome } = req.body;
-      
+
       if (!nome) {
         return res.status(400).json({ error: 'Nome é obrigatório' });
       }
 
       await Habilidade.criarHabilidade(nome);
       const habilidades = await Habilidade;
-      
+
       res.status(201).json({
         message: 'Habilidade criada com sucesso',
         habilidades

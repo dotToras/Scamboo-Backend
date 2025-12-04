@@ -6,7 +6,7 @@ class ServicoController {
   // GET /api/servicos
   async todosServicos(req, res) {
     try {
-      const servicos = await Servico.buscarServicos();
+      const servicos = await Servico.buscarTodos();
       res.json(servicos);
     } catch (error) {
       res.status(500).json({ error: error.message });

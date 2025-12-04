@@ -6,7 +6,7 @@ use dbScamboo;
 CREATE TABLE Credencial (
 
 	cre_codigo int primary key auto_increment,
-    cre_email varchar(90),
+    cre_email varchar(90),	
     cre_Senha varchar(45),
     cre_dataCadastro date
 
@@ -168,26 +168,6 @@ CREATE TABLE PalavraProibida (
 
 );
 
--- Procedures básicas, para inserir o que já é predefinido(categoria, habilidades, areas de interesse, palavras banidas)
-DELIMITER $$
-CREATE PROCEDURE spInserirAreaInteresse(
-    pari_nome varchar(45)
-)
-BEGIN
- 
-	INSERT INTO AreaInteresse( ari_nome)
-	VALUES(pari_nome);
- 
-END $$
-DELIMITER ;
- 
--- a colocar mais
-CALL spInserirAreaInteresse("TI e Programação");
-CALL spInserirAreaInteresse("Design UI/UX");
-CALL spInserirAreaInteresse("Design Gráfico");
-CALL spInserirAreaInteresse("Marketing Digital");
-CALL spInserirAreaInteresse("Edição de Vídeo");
- 
 DELIMITER $$
 CREATE PROCEDURE spInserirHabilidades(
     phab_nome varchar(45)
@@ -261,6 +241,8 @@ CALL spInserirUsuario('rafael@gmail.com','R4f4el@2025','foto_rafael.png','Rafael
 
 -- inserts de serviços
 
+
+
 INSERT INTO Servico(ser_nome, ser_descricao, ser_dataPedido, ser_dataExpiracao, ser_concluido, usu_codigo, cat_codigo) 
 VALUES('Desenvolvimento de site institucional','Criação de site completo para empresa','2025-10-31','2025-12-03',0,1,3);
 
@@ -309,8 +291,8 @@ BEGIN
         usu_linkLinkedin = COALESCE(pusu_linkLinkedin, usu_linkLinkedin)
     WHERE usu_codigo = pusu_codigo;
 
-END $$
 
+END $$
 
 DELIMITER ;
 
@@ -739,6 +721,25 @@ CREATE VIEW vwHabilidades AS
 SELECT hab_codigo, hab_nome
 FROM Habilidade;
 
+-- Exibir as notificações
+CREATE VIEW vwNotificacoesProposta AS
+SELECT 
+    np.nop_codigo        AS codigo,
+    np.nop_titulo        AS titulo,
+    np.nop_mensagem      AS mensagem,
+    np.nop_foiLida       AS foiLida,
+    np.nop_data          AS data,
+    np.usu_codigo        AS usuarioNotificado,
+    s.ser_codigo         AS codigoRelacionado,
+    'Proposta'           AS tipo,
+    u.usu_nome           AS remetente,
+    s.ser_nome           AS servicoRelacionado
+FROM NotificacaoProposta np
+INNER JOIN Servico s ON np.ser_codigo = s.ser_codigo
+INNER JOIN Usuario u ON s.usu_codigo = u.usu_codigo;
+
+
+SELECT * FROM vwNotificacoesProposta;
 
 -- RF023 O sistema deve permitir que o usuário receba moedas ao concluir um pedido de serviço como prestador 
 DELIMITER $$
@@ -771,6 +772,7 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Serviço não pode ser concluído: nenhuma proposta foi aceita para este pedido.';
     END IF;
 END $$
+
 DELIMITER ;
 
 DELIMITER $$
@@ -842,3 +844,6 @@ BEGIN
     ORDER BY c.cha_codigo DESC; 
     
 END $$
+
+DELIMITER ;
+

@@ -13,8 +13,4 @@ router.delete('/:id', usuarioController.destroy);
 router.get('/:id/habilidades', usuarioController.getHabilidades);
 router.post('/:id/habilidades', usuarioController.addHabilidade);
 
-// Rotas de áreas de interesse
-router.get('/:id/areas-interesse', usuarioController.getAreasInteresse);
-router.post('/:id/areas-interesse', usuarioController.addAreaInteresse);
-
 module.exports = router;

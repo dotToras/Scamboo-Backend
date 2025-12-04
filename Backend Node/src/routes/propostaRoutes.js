@@ -11,5 +11,6 @@ router.post('/', propostaController.store);
 router.patch('/:id/aceitar', propostaController.aceitar);
 router.patch('/:id/recusar', propostaController.recusar);
 router.delete('/:id', propostaController.destroy);
+router.get('/:propostaId/notificacoes', propostaController.notificacoes);
 
 module.exports = router;
