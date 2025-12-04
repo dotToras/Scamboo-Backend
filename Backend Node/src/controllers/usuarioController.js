@@ -5,7 +5,7 @@ class UsuarioController {
   // GET /api/usuarios
   async index(req, res) {
     try {
-      const usuarios = await Usuario.findAll();
+      const usuarios = await Usuario.buscarTodos();
       res.json(usuarios);
     } catch (error) {
       console.error(error);
@@ -18,7 +18,7 @@ class UsuarioController {
     try {
       const { id } = req.params;
       // Chama o model para buscar o usuário e espera o resultado
-      const usuario = await Usuario.findById(id);
+      const usuario = await Usuario.buscarPorId(id);
       
       if (!usuario) {
         return res.status(404).json({ error: 'Usuário não encontrado' });
@@ -44,7 +44,7 @@ class UsuarioController {
       }
 
       // Verificar se email já existe
-      const usuarioExistente = await Usuario.findByEmail(email);
+      const usuarioExistente = await Usuario.buscarPorEmail(email);
       if (usuarioExistente) {
         return res.status(400).json({ error: 'Email já cadastrado' });
       }
@@ -74,13 +74,13 @@ class UsuarioController {
       const { id } = req.params;
       const { fotoPerfil, nome, status, linkPortifolio, linkLinkedin } = req.body;
 
-      const usuario = await Usuario.findById(id);
+      const usuario = await Usuario.buscarPorId(id);
       if (!usuario) {
         return res.status(404).json({ error: 'Usuário não encontrado' });
       }
 
       // Atualiza apenas os campos fornecidos
-      const usuarioAtualizado = await Usuario.update(id, {
+      const usuarioAtualizado = await Usuario.atualizar(id, {
         fotoPerfil: fotoPerfil || usuario.usu_fotoPerfil,
         nome: nome || usuario.usu_Nome,
         status: status !== undefined ? status : usuario.usu_status,
@@ -100,7 +100,7 @@ class UsuarioController {
     try {
       const { id } = req.params;
 
-      const deletado = await Usuario.delete(id);
+      const deletado = await Usuario.deletar(id);
       
       if (!deletado) {
         return res.status(404).json({ error: 'Usuário não encontrado' });
@@ -117,7 +117,7 @@ class UsuarioController {
   async getHabilidades(req, res) {
     try {
       const { id } = req.params;
-      const habilidades = await Usuario.findHabilidades(id);
+      const habilidades = await Usuario.buscarHabilidades(id);
       res.json(habilidades);
     } catch (error) {
       console.error(error);
@@ -140,36 +140,6 @@ class UsuarioController {
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Erro ao adicionar habilidade' });
-    }
-  }
-
-  // GET /api/usuarios/:id/areas-interesse
-  async getAreasInteresse(req, res) {
-    try {
-      const { id } = req.params;
-      const areas = await Usuario.findAreasInteresse(id);
-      res.json(areas);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Erro ao buscar áreas de interesse' });
-    }
-  }
-
-  // POST /api/usuarios/:id/areas-interesse
-  async addAreaInteresse(req, res) {
-    try {
-      const { id } = req.params;
-      const { areaId } = req.body;
-
-      if (!areaId) {
-        return res.status(400).json({ error: 'areaId é obrigatório' });
-      }
-
-      await Usuario.addAreaInteresse(id, areaId);
-      res.status(201).json({ message: 'Área de interesse adicionada com sucesso' });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Erro ao adicionar área de interesse' });
     }
   }
 }
