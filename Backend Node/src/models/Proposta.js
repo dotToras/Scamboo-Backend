@@ -64,7 +64,7 @@ class Proposta {
 
   // Aceitar proposta
   static async aceitar(id) {
-    await db.query('UPDATE Proposta SET pro_aceita = 1 WHERE pro_codigo = ?', [id]);
+    await db.query('CALL spAceitarProposta(?)', [id]);
     return await this.findById(id);
   }
 
